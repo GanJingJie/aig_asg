@@ -6,6 +6,10 @@ from Graph import *
 from Character import *
 from State import *
 
+
+## declare global variable
+choice = 0
+
 class Knight_TeamA(Character):
 
     def __init__(self, world, image, base, position):
@@ -17,7 +21,7 @@ class Knight_TeamA(Character):
         self.move_target = GameEntity(world, "knight_move_target", None)
         self.target = None
 
-        self.maxSpeed = 80
+        self.maxSpeed = 80 
         self.min_target_distance = 100
         self.melee_damage = 20
         self.melee_cooldown = 2.
@@ -42,10 +46,15 @@ class Knight_TeamA(Character):
         
         Character.process(self, time_passed)
 
-        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
+        ## levelling up in order
+        global choice
+        
+        level_up_stats = ["hp", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            choice = randint(0, len(level_up_stats) - 1)
+            if choice == 3:
+                choice = 0
             self.level_up(level_up_stats[choice])
+            choice += 1
 
    
 
@@ -57,9 +66,12 @@ class KnightStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.knight = knight
 
-        self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
+        #Moving towards one path lane
+        self.knight.path_graph = self.knight.world.paths[1]
+        #self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
 
 
+        
     def do_actions(self):
 
         self.knight.velocity = self.knight.move_target.position - self.knight.position
@@ -95,7 +107,7 @@ class KnightStateSeeking_TeamA(State):
         self.path = pathFindAStar(self.knight.path_graph, \
                                   nearest_node, \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
-
+        
         
         self.path_length = len(self.path)
 
@@ -142,6 +154,8 @@ class KnightStateAttacking_TeamA(State):
         return None
 
 
+
+
 class KnightStateKO_TeamA(State):
 
     def __init__(self, knight):
@@ -160,7 +174,9 @@ class KnightStateKO_TeamA(State):
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
-            self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
+            
+            #Moving towards same path lane after spawning
+            self.knight.path_graph = self.knight.world.paths[1]
             return "seeking"
             
         return None
