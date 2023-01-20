@@ -6,6 +6,9 @@ from Graph import *
 from Character import *
 from State import *
 
+## declare global variable
+choice = 0
+
 class Archer_HalJordan(Character):
 
     def __init__(self, world, image, projectile_image, base, position):
@@ -42,7 +45,9 @@ class Archer_HalJordan(Character):
     def process(self, time_passed):
          
         Character.process(self, time_passed)
-        choice = 0
+
+        ## levelling up in order
+        global choice
 
         level_up_stats = ["projectile range", "speed", "ranged damage"]
         if self.can_level_up():
