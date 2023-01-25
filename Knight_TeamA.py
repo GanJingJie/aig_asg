@@ -75,7 +75,7 @@ class KnightStateSeeking_TeamA(State):
         global level
 
         #Moving towards one path lane
-        if level >= 6:
+        if level >= 4:
             self.knight.path_graph = self.knight.world.paths[0]
         else:
             self.knight.path_graph = self.knight.world.paths[2]
@@ -188,7 +188,7 @@ class KnightStateKO_TeamA(State):
             self.knight.ko = False
             
             #Moving towards same path lane after spawning
-            if level >= 6:
+            if level >= 4:
                 self.knight.path_graph = self.knight.world.paths[0]
             else:
                 self.knight.path_graph = self.knight.world.paths[2]
