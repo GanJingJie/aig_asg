@@ -9,6 +9,7 @@ from State import *
 
 ## declare global variable
 choice = 0
+level = 0
 
 class Knight_TeamA(Character):
 
@@ -48,13 +49,19 @@ class Knight_TeamA(Character):
 
         ## levelling up in order
         global choice
+        global level
         
-        level_up_stats = ["hp", "melee damage", "melee cooldown"]
+        level_up_stats = ["melee damage", "hp"]
         if self.can_level_up():
-            if choice == 3:
+            if choice >= 2:
                 choice = 0
             self.level_up(level_up_stats[choice])
             choice += 1
+            level += 1
+
+        if level >= 4:
+            if self.current_hp < self.max_hp * 0.4: #HP: 192 hp / 480 hp
+                self.heal()
 
    
 
@@ -65,9 +72,13 @@ class KnightStateSeeking_TeamA(State):
 
         State.__init__(self, "seeking")
         self.knight = knight
+        global level
 
         #Moving towards one path lane
-        self.knight.path_graph = self.knight.world.paths[1]
+        if level >= 6:
+            self.knight.path_graph = self.knight.world.paths[0]
+        else:
+            self.knight.path_graph = self.knight.world.paths[2]
         #self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
 
 
@@ -170,13 +181,17 @@ class KnightStateKO_TeamA(State):
 
     def check_conditions(self):
 
+        global level
         # respawned
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
             
             #Moving towards same path lane after spawning
-            self.knight.path_graph = self.knight.world.paths[1]
+            if level >= 6:
+                self.knight.path_graph = self.knight.world.paths[0]
+            else:
+                self.knight.path_graph = self.knight.world.paths[2]
             return "seeking"
             
         return None
