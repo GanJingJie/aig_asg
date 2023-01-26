@@ -53,15 +53,15 @@ class Archer_HalJordan(Character):
         global choice
         global level
 
-        level_up_stats = ["ranged damage", "ranged cooldown"]
+        level_up_stats = ["ranged damage", "ranged cooldown", "ranged cooldown"]
         if self.can_level_up():
-            if choice == 2:
+            if choice == 3:
                 choice = 0
             self.level_up(level_up_stats[choice])
             choice += 1
             level += 1
 
-        if self.brain.active_state.name == "fleeing":
+        if self.brain.active_state.name == "fleeing" or self.brain.active_state.name == "seeking":
             if self.current_hp < self.max_hp:
                 self.heal()
 
@@ -134,14 +134,14 @@ class ArcherStateAttacking_HalJordan(State):
 
     def do_actions(self):
 
-        archer = self.archer.position
-        archerSpeed = self.archer.target.position - self.archer.position
-        nearestEntity = self.archer.world.get_nearest_opponent(self.archer)
+        #archer = self.archer.position
+        # archerSpeed = self.archer.target.position - self.archer.position
+        # nearestEntity = self.archer.world.get_nearest_opponent(self.archer)
 
         #calculate the other point of line
         
 
-        opponent_distance = (archer - self.archer.target.position).length()
+        opponent_distance = (self.archer.position - self.archer.target.position).length()
         
 
         # opponent within range
@@ -215,31 +215,56 @@ class ArcherStateKO_HalJordan(State):
 
 class ArcherStateFleeing_HalJordan(State):
 
-    def __init__(self,archer):
+    def __init__(self, archer):
 
         State.__init__(self, "fleeing")
         self.archer = archer
 
     def do_actions(self):
 
+
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
-            self.archer.velocity.normalize_ip()
+            self.archer.velocity.normalize_ip();
             self.archer.velocity *= self.archer.maxSpeed
-        
 
     def check_conditions(self):
-        
-        # target safe
-         if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
-            self.archer.target = None
-            return "attacking"
+
+        # target is gone
+        if self.archer.current_hp > self.archer.max_hp * 0.6:
+            return "seeking"
+
+        if (self.archer.position - self.archer.move_target.position).length() < 8:
+ 
+            # continue on path
+            if self.current_connection < self.path_length:
+                try:
+                    self.archer.move_target.position = self.path[self.current_connection].fromNode.position
+                    self.current_connection -= 1
+                    
+                except:
+                         
+                    self.archer.move_target.position = self.archer.base.position     
+                
+        return None
 
     def entry_actions(self):
+
+        nearest_node = self.archer.path_graph.get_nearest_node(self.archer.position)
+
+        self.path = pathFindAStar(self.archer.path_graph, \
+                                  nearest_node, \
+                                  self.archer.world.graph.get_nearest_node(self.archer.base.position))
         
-        flee_direction = (self.archer.position - self.archer.target.position).normalize()
-        flee_distance = -1000
-        self.archer.move_target.position = self.archer.position - flee_direction * flee_distance
+        self.path_length = len(self.path)
+
+        if (self.path_length > 0):
+            self.current_connection = 0
+            self.archer.move_target.position = self.path[0].fromNode.position
+
+        else:
+            
+            self.archer.move_target.position = self.archer.base.position
 
 # Checking if vectors intersect
 def ccw(A,B,C):
