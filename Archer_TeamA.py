@@ -61,9 +61,10 @@ class Archer_HalJordan(Character):
             choice += 1
             level += 1
 
-        if self.brain.active_state.name == "fleeing" or self.brain.active_state.name == "seeking":
+        if self.brain.active_state.name != "attacking":
             if self.current_hp < self.max_hp:
                 self.heal()
+        
 
 class ArcherStateSeeking_HalJordan(State):
 
@@ -160,11 +161,22 @@ class ArcherStateAttacking_HalJordan(State):
 
 
     def check_conditions(self):
-        opponent_distance = (self.archer.position - self.archer.target.position).length()
+        
+        #opponent_distance = (self.archer.position - self.archer.target.position).length()
 
-        if opponent_distance <= (self.archer.min_target_distance / 3) or self.archer.current_hp < self.archer.max_hp * 0.5:
-            return "fleeing"
+        #if opponent_distance <= (self.archer.min_target_distance / 3) or self.archer.current_hp < self.archer.max_hp * 0.5:
+            #return "fleeing"
 
+        # if orc is close, flee
+        #nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        #if nearest_opponent is not None:
+            #opponent_distance = (self.archer.position - nearest_opponent.position).length()
+            #if opponent_distance <= self.archer.min_target_distance:
+               # if opponent_distance <= 60:
+                  #  if nearest_opponent.name == "orc" or nearest_opponent.name == "knight":
+                   #     self.archer.target = nearest_opponent
+                   #     return "fleeing"
+        
         # target is gone
         if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
             self.archer.target = None
@@ -222,15 +234,22 @@ class ArcherStateFleeing_HalJordan(State):
 
     def do_actions(self):
 
-
         self.archer.velocity = self.archer.move_target.position - self.archer.position
+        
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip();
             self.archer.velocity *= self.archer.maxSpeed
 
+        if self.archer.current_ranged_cooldown <= 0:
+            self.archer.ranged_attack(self.archer.target.position)
+
     def check_conditions(self):
 
         # target is gone
+        if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
+            self.archer.target = None
+            return "seeking"
+        
         if self.archer.current_hp > self.archer.max_hp * 0.6:
             return "seeking"
 
