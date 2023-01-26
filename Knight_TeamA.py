@@ -11,7 +11,7 @@ from State import *
 choice = 0
 level = 0
 
-class Knight_TeamA(Character):
+class Knight_HalJordan(Character):
 
     def __init__(self, world, image, base, position):
 
@@ -27,9 +27,9 @@ class Knight_TeamA(Character):
         self.melee_damage = 20
         self.melee_cooldown = 2.
 
-        seeking_state = KnightStateSeeking_TeamA(self)
-        attacking_state = KnightStateAttacking_TeamA(self)
-        ko_state = KnightStateKO_TeamA(self)
+        seeking_state = KnightStateSeeking_HalJordan(self)
+        attacking_state = KnightStateAttacking_HalJordan(self)
+        ko_state = KnightStateKO_HalJordan(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -60,25 +60,21 @@ class Knight_TeamA(Character):
             level += 1
 
         if level >= 4:
-            if self.current_hp < self.max_hp * 0.4: #HP: 192 hp / 480 hp
+            if self.current_hp < self.max_hp * 0.40: #HP: 192 hp / 480 hp
                 self.heal()
 
    
 
 
-class KnightStateSeeking_TeamA(State):
+class KnightStateSeeking_HalJordan(State):
 
     def __init__(self, knight):
 
         State.__init__(self, "seeking")
         self.knight = knight
-        global level
-
-        #Moving towards one path lane
-        if level >= 4:
-            self.knight.path_graph = self.knight.world.paths[0]
-        else:
-            self.knight.path_graph = self.knight.world.paths[2]
+        
+        #Moving towards one path lane [Mid Top] instead of randomly selecting the paths
+        self.knight.path_graph = self.knight.world.paths[2]
         #self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
 
 
@@ -130,7 +126,7 @@ class KnightStateSeeking_TeamA(State):
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
 
 
-class KnightStateAttacking_TeamA(State):
+class KnightStateAttacking_HalJordan(State):
 
     def __init__(self, knight):
 
@@ -167,7 +163,7 @@ class KnightStateAttacking_TeamA(State):
 
 
 
-class KnightStateKO_TeamA(State):
+class KnightStateKO_HalJordan(State):
 
     def __init__(self, knight):
 
@@ -181,17 +177,14 @@ class KnightStateKO_TeamA(State):
 
     def check_conditions(self):
 
-        global level
         # respawned
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
             
             #Moving towards same path lane after spawning
-            if level >= 4:
-                self.knight.path_graph = self.knight.world.paths[0]
-            else:
-                self.knight.path_graph = self.knight.world.paths[2]
+            self.knight.path_graph = self.knight.world.paths[2]
+
             return "seeking"
             
         return None
