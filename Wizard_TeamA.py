@@ -6,7 +6,6 @@ from Graph import *
 from Character import *
 from State import *
 
-choice = 0
 level = 0
 
 class Wizard_TeamA(Character):
@@ -32,6 +31,7 @@ class Wizard_TeamA(Character):
         attacking_state = WizardStateAttacking_TeamA(self)
         fleeing_state = WizardStateFleeing_TeamA(self)
         ko_state = WizardStateKO_TeamA(self)
+        
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -49,18 +49,16 @@ class Wizard_TeamA(Character):
         
         Character.process(self, time_passed)
 
-        global level
-        global choice
-
         if self.current_hp < 100:
             self.heal()
 
+        global level
+        choice = 0
         level_up_stats = ["ranged cooldown", "ranged damage", "ranged cooldown"]
         if self.can_level_up():
             self.level_up(level_up_stats[choice])
+            choice = choice + 1
             level += 1
-            choice += 1
-            
             if choice == 2:
                 choice = 0
 
@@ -72,10 +70,13 @@ class WizardStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.wizard = wizard
 
+        global level
+
         if level >= 4:
-            self.wizard.path_graph = self.wizard.world.paths[2]
+            self.wizard.path_graph = self.wizard.world.paths[0]
         else:
             self.wizard.path_graph = self.wizard.world.paths[1]
+        
 
     def do_actions(self):
 
@@ -86,15 +87,8 @@ class WizardStateSeeking_TeamA(State):
 
     def check_conditions(self):
 
+        # check if opponent is in range
         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
-
-        if nearest_opponent is not None:
-            opponent_distance = (self.wizard.position - nearest_opponent.position).length()
-            if opponent_distance <= 60:
-                if nearest_opponent.name == "orc" or (nearest_opponent.name == "knight" and nearest_opponent.target == self.wizard):
-                    self.wizard.target = nearest_opponent
-                    return "fleeing"
-                
         if nearest_opponent is not None:
             opponent_distance = (self.wizard.position - nearest_opponent.position).length()
             if opponent_distance <= self.wizard.min_target_distance:
@@ -107,7 +101,7 @@ class WizardStateSeeking_TeamA(State):
             if self.current_connection < self.path_length:
                 self.wizard.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
-                   
+            
         return None
 
     def entry_actions(self):
@@ -118,6 +112,7 @@ class WizardStateSeeking_TeamA(State):
                                   nearest_node, \
                                   self.wizard.path_graph.nodes[self.wizard.base.target_node_index])
 
+        
         self.path_length = len(self.path)
 
         if (self.path_length > 0):
@@ -153,18 +148,6 @@ class WizardStateAttacking_TeamA(State):
 
     def check_conditions(self):
 
-        nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
-        if nearest_opponent is not None:
-            opponent_distance = (self.wizard.position - nearest_opponent.position).length()
-            if opponent_distance <= self.wizard.min_target_distance:
-                if opponent_distance <= 60:
-                    if nearest_opponent.name == "orc" or nearest_opponent.name == "knight":
-                        self.wizard.target = nearest_opponent
-                        return "fleeing"
-                    elif (nearest_opponent.name == "archer" or nearest_opponent.name == "wizard") and nearest_opponent.target == self.wizard:
-                         self.wizard.target = nearest_opponent
-                         return "fleeing"                       
-    
         if self.wizard.current_hp < 80:
             return "fleeing"
 
@@ -189,26 +172,18 @@ class WizardStateFleeing_TeamA(State):
 
     def do_actions(self):
 
+
         self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
-        
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip();
             self.wizard.velocity *= self.wizard.maxSpeed
 
-        if self.wizard.current_ranged_cooldown <= 0:
-            self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
-
     def check_conditions(self):
 
         # target is gone
-        if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
-            self.wizard.target = None
-            return "seeking"
-
-        # if healed up
         if self.wizard.current_hp > 100:
             return "seeking"
-        
+
         if (self.wizard.position - self.wizard.move_target.position).length() < 8:
  
             # continue on path
@@ -238,15 +213,13 @@ class WizardStateFleeing_TeamA(State):
         
         self.path_length = len(self.path)
 
-        if (self.path_length > 1):
-            self.current_connection = 0
-            self.wizard.move_target.position = self.path[1].fromNode.position
         if (self.path_length > 0):
             self.current_connection = 0
             self.wizard.move_target.position = self.path[0].fromNode.position
+
         else:
-            self.wizard.move_target.position = self.wizard.path_graph.nodes[self.wizard.base.spawn_node_index].position
             
+            self.wizard.move_target.position = self.wizard.base.position
         
 class WizardStateKO_TeamA(State):
 
@@ -261,17 +234,15 @@ class WizardStateKO_TeamA(State):
 
 
     def check_conditions(self):
-
+        global level
         # respawned
         if self.wizard.current_respawn_time <= 0:
             self.wizard.current_respawn_time = self.wizard.respawn_time
             self.wizard.ko = False
             if level >= 4:
-                self.wizard.path_graph = self.wizard.world.paths[2]
-                
+                self.wizard.path_graph = self.wizard.world.paths[0]
             else:
                 self.wizard.path_graph = self.wizard.world.paths[1]
-                
             return "seeking"
             
         return None
