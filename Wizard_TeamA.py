@@ -6,6 +6,9 @@ from Graph import *
 from Character import *
 from State import *
 
+choice = 0
+level = 0
+
 class Wizard_TeamA(Character):
 
     def __init__(self, world, image, projectile_image, base, position, explosion_image = None):
@@ -29,7 +32,6 @@ class Wizard_TeamA(Character):
         attacking_state = WizardStateAttacking_TeamA(self)
         fleeing_state = WizardStateFleeing_TeamA(self)
         ko_state = WizardStateKO_TeamA(self)
-        
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -47,14 +49,18 @@ class Wizard_TeamA(Character):
         
         Character.process(self, time_passed)
 
+        global level
+        global choice
+
         if self.current_hp < 100:
             self.heal()
 
-        choice = 0
         level_up_stats = ["ranged cooldown", "ranged damage", "ranged cooldown"]
         if self.can_level_up():
             self.level_up(level_up_stats[choice])
-            choice = choice + 1
+            level += 1
+            choice += 1
+            
             if choice == 2:
                 choice = 0
 
@@ -66,7 +72,10 @@ class WizardStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.wizard = wizard
 
-        self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
+        if level >= 4:
+            self.wizard.path_graph = self.wizard.world.paths[2]
+        else:
+            self.wizard.path_graph = self.wizard.world.paths[1]
 
     def do_actions(self):
 
@@ -181,6 +190,7 @@ class WizardStateFleeing_TeamA(State):
     def do_actions(self):
 
         self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
+        
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip();
             self.wizard.velocity *= self.wizard.maxSpeed
@@ -235,7 +245,7 @@ class WizardStateFleeing_TeamA(State):
             self.current_connection = 0
             self.wizard.move_target.position = self.path[0].fromNode.position
         else:
-            self.wizard.move_target.position = self.wizard.path_graph.nodes[self.wizard.base.spawn_node_index]
+            self.wizard.move_target.position = self.wizard.path_graph.nodes[self.wizard.base.spawn_node_index].position
             
         
 class WizardStateKO_TeamA(State):
@@ -256,7 +266,12 @@ class WizardStateKO_TeamA(State):
         if self.wizard.current_respawn_time <= 0:
             self.wizard.current_respawn_time = self.wizard.respawn_time
             self.wizard.ko = False
-            self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
+            if level >= 4:
+                self.wizard.path_graph = self.wizard.world.paths[2]
+                
+            else:
+                self.wizard.path_graph = self.wizard.world.paths[1]
+                
             return "seeking"
             
         return None
