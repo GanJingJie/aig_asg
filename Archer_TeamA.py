@@ -74,7 +74,7 @@ class ArcherStateSeeking_HalJordan(State):
         global level
 
         if level >= 4:
-            self.archer.path_graph = self.archer.world.paths[3]
+            self.archer.path_graph = self.archer.world.paths[1]
         else:
             self.archer.path_graph = self.archer.world.paths[0]
 
@@ -197,7 +197,7 @@ class ArcherStateKO_HalJordan(State):
             self.archer.current_respawn_time = self.archer.respawn_time
             self.archer.ko = False
             if level >= 4:
-                self.archer.path_graph = self.archer.world.paths[3]
+                self.archer.path_graph = self.archer.world.paths[1]
             else:
                 self.archer.path_graph = self.archer.world.paths[0]
             return "seeking"
